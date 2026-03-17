@@ -1,9 +1,9 @@
 <template>
   <div class="article-list">
-    <div v-if="loading" class="loading">加载中...</div>
+    <SkeletonLoader v-if="loading" :lines="4" />
     <div v-else-if="error" class="error">{{ error }}</div>
     <template v-else-if="data">
-      <div v-if="data.items.length === 0" class="empty">暂无文章</div>
+      <EmptyState v-if="data.items.length === 0" title="暂无文章" description="还没有任何文章，敬请期待" />
       <ArticleCard
         v-for="article in data.items"
         :key="article.id"
@@ -25,6 +25,8 @@ import { useArticlesStore } from '@/stores/articles'
 import { articlesApi } from '@/api/articles'
 import ArticleCard from './ArticleCard.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
+import SkeletonLoader from '@/components/common/SkeletonLoader.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { Paginated } from '@/types/api'
 import type { ArticleSummary } from '@/types/article'
 
