@@ -4,7 +4,6 @@
  * - 401 时自动尝试 refresh token，失败则跳转登录
  */
 import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
-import { useAuthStore } from '@/stores/auth'
 
 const client: AxiosInstance = axios.create({
   baseURL: '/api/v1',
