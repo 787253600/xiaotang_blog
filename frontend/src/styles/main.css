@@ -16,7 +16,7 @@ body {
   font-size: var(--font-size-base);
   color: var(--color-text);
   background-color: var(--color-bg);
-  line-height: 1.6;
+  line-height: var(--line-height-body);
   transition: background-color 0.2s, color 0.2s;
 }
 
@@ -198,8 +198,8 @@ button,
 }
 
 .btn-danger {
-  color: var(--color-error);
-  border-color: var(--color-error);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .btn-sm {
@@ -215,7 +215,7 @@ button,
 }
 
 .error {
-  color: var(--color-error);
+  color: var(--color-danger);
 }
 
 /* 登录页 */

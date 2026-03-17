@@ -5,7 +5,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useUiStore = defineStore('ui', () => {
-  const isDark = ref(localStorage.getItem('theme') === 'dark')
+  const isDark = ref(localStorage.getItem('theme') !== 'light')
   const globalLoading = ref(false)
 
   function toggleTheme(): void {
