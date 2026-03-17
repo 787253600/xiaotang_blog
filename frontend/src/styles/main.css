@@ -93,32 +93,41 @@ a:hover {
 
 /* 文章卡片 */
 .article-card {
-  padding: var(--spacing-lg);
+  padding: 1.25rem;
   border: 1px solid var(--color-border);
+  border-left: 3px solid var(--card-accent, var(--color-primary));
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-md);
-  background: var(--color-bg);
-  transition: box-shadow 0.2s;
+  background: var(--color-bg-secondary);
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
 }
 
 .article-card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
 }
 
 .card-title h2 {
   font-size: var(--font-size-xl);
+  font-weight: 600;
   color: var(--color-text);
+  transition: color 0.15s;
 }
+
+.card-title:hover h2 { color: var(--color-primary); }
 
 .card-excerpt {
   margin-top: var(--spacing-sm);
   color: var(--color-text-muted);
+  line-height: var(--line-height-body);
 }
 
 .read-more {
   display: inline-block;
   margin-top: var(--spacing-sm);
   font-size: var(--font-size-sm);
+  color: var(--color-primary);
 }
 
 /* 文章元信息 */

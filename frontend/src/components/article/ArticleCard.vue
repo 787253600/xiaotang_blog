@@ -1,5 +1,5 @@
 <template>
-  <article class="article-card">
+  <article class="article-card" :style="{ '--card-accent': accentColor }">
     <RouterLink :to="`/articles/${article.id}`" class="card-title">
       <h2>{{ article.title }}</h2>
     </RouterLink>
@@ -10,9 +10,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import ArticleMeta from './ArticleMeta.vue'
 import type { ArticleSummary } from '@/types/article'
 
-defineProps<{ article: ArticleSummary }>()
+const props = defineProps<{ article: ArticleSummary }>()
+
+const CATEGORY_COLORS = ['#58a6ff', '#3fb950', '#f78166', '#d2a8ff', '#ffa657']
+const accentColor = computed(() =>
+  CATEGORY_COLORS[(props.article.category?.id ?? 0) % CATEGORY_COLORS.length]
+)
 </script>
