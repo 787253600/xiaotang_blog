@@ -4,15 +4,10 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.cache.client import get_redis_client
-from app.cache.keys import CacheKeys, CacheTTL
+from app.cache.keys import CacheKeys, CacheTTL, redis_delete, redis_get, redis_setex
 from app.core.exceptions import ConflictError, NotFoundError
 from app.domains.categories.repository import CategoryRepository
-from app.domains.categories.schemas import (
-    CategoryCreate,
-    CategoryResponse,
-    CategoryUpdate,
-)
+from app.domains.categories.schemas import CategoryCreate, CategoryResponse, CategoryUpdate
 
 
 class CategoryService:
@@ -20,8 +15,7 @@ class CategoryService:
         self._repo = CategoryRepository(session)
 
     async def get_all(self) -> list[CategoryResponse]:
-        redis = await get_redis_client()
-        cached = await redis.get(CacheKeys.CATEGORY_LIST)
+        cached = await redis_get(CacheKeys.CATEGORY_LIST)
         if cached:
             return [CategoryResponse(**item) for item in json.loads(cached)]
 
@@ -33,7 +27,7 @@ class CategoryService:
             resp.article_count = count
             result.append(resp)
 
-        await redis.setex(
+        await redis_setex(
             CacheKeys.CATEGORY_LIST,
             CacheTTL.CATEGORY_LIST,
             json.dumps([r.model_dump(mode="json") for r in result]),
@@ -54,7 +48,7 @@ class CategoryService:
         if existing:
             raise ConflictError(f"slug '{data.slug}' 已存在")
         category = await self._repo.create(data)
-        await self._invalidate_cache()
+        await redis_delete(CacheKeys.CATEGORY_LIST)
         return CategoryResponse.model_validate(category)
 
     async def update(self, category_id: int, data: CategoryUpdate) -> CategoryResponse:
@@ -66,7 +60,7 @@ class CategoryService:
             if existing:
                 raise ConflictError(f"slug '{data.slug}' 已存在")
         category = await self._repo.update(category, data)
-        await self._invalidate_cache()
+        await redis_delete(CacheKeys.CATEGORY_LIST)
         return CategoryResponse.model_validate(category)
 
     async def delete(self, category_id: int) -> None:
@@ -74,8 +68,4 @@ class CategoryService:
         if not category:
             raise NotFoundError("分类")
         await self._repo.delete(category)
-        await self._invalidate_cache()
-
-    async def _invalidate_cache(self) -> None:
-        redis = await get_redis_client()
-        await redis.delete(CacheKeys.CATEGORY_LIST)
+        await redis_delete(CacheKeys.CATEGORY_LIST)

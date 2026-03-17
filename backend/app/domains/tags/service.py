@@ -4,8 +4,7 @@ import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.cache.client import get_redis_client
-from app.cache.keys import CacheKeys, CacheTTL
+from app.cache.keys import CacheKeys, CacheTTL, redis_delete, redis_get, redis_setex
 from app.core.exceptions import ConflictError, NotFoundError
 from app.domains.tags.repository import TagRepository
 from app.domains.tags.schemas import TagCreate, TagResponse, TagUpdate
@@ -16,8 +15,7 @@ class TagService:
         self._repo = TagRepository(session)
 
     async def get_all(self) -> list[TagResponse]:
-        redis = await get_redis_client()
-        cached = await redis.get(CacheKeys.TAG_LIST)
+        cached = await redis_get(CacheKeys.TAG_LIST)
         if cached:
             return [TagResponse(**item) for item in json.loads(cached)]
 
@@ -29,7 +27,7 @@ class TagService:
             resp.article_count = count
             result.append(resp)
 
-        await redis.setex(
+        await redis_setex(
             CacheKeys.TAG_LIST,
             CacheTTL.TAG_LIST,
             json.dumps([r.model_dump(mode="json") for r in result]),
@@ -41,7 +39,7 @@ class TagService:
         if existing:
             raise ConflictError(f"slug '{data.slug}' 已存在")
         tag = await self._repo.create(data)
-        await self._invalidate_cache()
+        await redis_delete(CacheKeys.TAG_LIST)
         return TagResponse.model_validate(tag)
 
     async def update(self, tag_id: int, data: TagUpdate) -> TagResponse:
@@ -53,7 +51,7 @@ class TagService:
             if existing:
                 raise ConflictError(f"slug '{data.slug}' 已存在")
         tag = await self._repo.update(tag, data)
-        await self._invalidate_cache()
+        await redis_delete(CacheKeys.TAG_LIST)
         return TagResponse.model_validate(tag)
 
     async def delete(self, tag_id: int) -> None:
@@ -61,8 +59,4 @@ class TagService:
         if not tag:
             raise NotFoundError("标签")
         await self._repo.delete(tag)
-        await self._invalidate_cache()
-
-    async def _invalidate_cache(self) -> None:
-        redis = await get_redis_client()
-        await redis.delete(CacheKeys.TAG_LIST)
+        await redis_delete(CacheKeys.TAG_LIST)

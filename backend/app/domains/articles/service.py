@@ -5,8 +5,8 @@ import math
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.cache.keys import CacheKeys, CacheTTL, redis_delete, redis_get, redis_setex
 from app.cache.client import get_redis_client
-from app.cache.keys import CacheKeys, CacheTTL
 from app.core.exceptions import ConflictError, NotFoundError
 from app.domains.articles.repository import ArticleRepository
 from app.domains.articles.schemas import (
@@ -30,7 +30,6 @@ class ArticleService:
         tag_id: int | None = None,
         published_only: bool = True,
     ) -> PaginatedResponse[ArticleSummary]:
-        cache_key = CacheKeys.article_list_page(pagination.page, pagination.page_size)
         if category_id:
             cache_key = CacheKeys.article_category_page(
                 category_id, pagination.page, pagination.page_size
@@ -39,12 +38,12 @@ class ArticleService:
             cache_key = CacheKeys.article_tag_page(
                 tag_id, pagination.page, pagination.page_size
             )
+        else:
+            cache_key = CacheKeys.article_list_page(pagination.page, pagination.page_size)
 
-        redis = await get_redis_client()
-        cached = await redis.get(cache_key)
+        cached = await redis_get(cache_key)
         if cached:
-            data = json.loads(cached)
-            return PaginatedResponse[ArticleSummary](**data)
+            return PaginatedResponse[ArticleSummary](**json.loads(cached))
 
         articles, total = await self._repo.get_list(
             offset=pagination.offset,
@@ -62,7 +61,7 @@ class ArticleService:
             total_pages=math.ceil(total / pagination.page_size) if total > 0 else 0,
         )
 
-        await redis.setex(
+        await redis_setex(
             cache_key,
             CacheTTL.ARTICLE_LIST,
             json.dumps(result.model_dump(mode="json")),
@@ -70,9 +69,8 @@ class ArticleService:
         return result
 
     async def get_detail(self, article_id: int, increment_view: bool = False) -> ArticleResponse:
-        redis = await get_redis_client()
         cache_key = CacheKeys.article_detail(article_id)
-        cached = await redis.get(cache_key)
+        cached = await redis_get(cache_key)
         if cached:
             if increment_view:
                 await self._repo.increment_view_count(article_id)
@@ -86,7 +84,7 @@ class ArticleService:
             await self._repo.increment_view_count(article_id)
 
         result = ArticleResponse.model_validate(article)
-        await redis.setex(
+        await redis_setex(
             cache_key,
             CacheTTL.ARTICLE_DETAIL,
             json.dumps(result.model_dump(mode="json")),
@@ -151,14 +149,17 @@ class ArticleService:
         )
 
     async def _invalidate_article_cache(self, article_id: int) -> None:
-        redis = await get_redis_client()
-        await redis.delete(CacheKeys.article_detail(article_id))
+        await redis_delete(CacheKeys.article_detail(article_id))
         await self._invalidate_list_cache()
 
     async def _invalidate_list_cache(self) -> None:
-        """清除所有文章列表缓存（使用 pattern 删除）"""
         redis = await get_redis_client()
-        patterns = ["article:list:*", "article:category:*", "article:tag:*"]
-        for pattern in patterns:
-            async for key in redis.scan_iter(pattern):
-                await redis.delete(key)
+        if redis is None:
+            return
+        try:
+            patterns = ["article:list:*", "article:category:*", "article:tag:*"]
+            for pattern in patterns:
+                async for key in redis.scan_iter(pattern):
+                    await redis.delete(key)
+        except Exception:
+            pass

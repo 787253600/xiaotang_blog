@@ -66,12 +66,16 @@ def decode_token(token: str) -> dict:
 
 
 async def revoke_token(jti: str, expire_seconds: int) -> None:
-    """将 token jti 加入 Redis 黑名单"""
+    """将 token jti 加入 Redis 黑名单（Redis 不可用时跳过）"""
     redis = await get_redis_client()
+    if redis is None:
+        return
     await redis.setex(CacheKeys.jwt_blacklist(jti), expire_seconds, "1")
 
 
 async def is_token_revoked(jti: str) -> bool:
-    """检查 token 是否已被吊销"""
+    """检查 token 是否已被吊销（Redis 不可用时默认未吊销）"""
     redis = await get_redis_client()
+    if redis is None:
+        return False
     return await redis.exists(CacheKeys.jwt_blacklist(jti)) == 1

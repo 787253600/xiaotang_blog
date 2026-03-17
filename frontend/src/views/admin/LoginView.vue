@@ -1,7 +1,7 @@
 <template>
   <div class="login-view">
     <div class="login-card">
-      <h1>小唐博客</h1>
+      <h1>小汤博客</h1>
       <h2>管理员登录</h2>
 
       <form @submit.prevent="handleLogin">

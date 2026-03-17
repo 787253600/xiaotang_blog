@@ -2,7 +2,6 @@
 
 from functools import lru_cache
 
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +13,7 @@ class Settings(BaseSettings):
     )
 
     # 应用
-    app_name: str = "小唐博客"
+    app_name: str = "小汤博客"
     app_version: str = "0.1.0"
     debug: bool = False
 
@@ -30,8 +29,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    # CORS
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    # CORS（逗号分隔字符串，validator 负责转换为 list）
+    allowed_origins: str = "http://localhost:3000"
 
     # 管理员初始账户
     admin_username: str = "admin"
@@ -42,12 +41,10 @@ class Settings(BaseSettings):
     default_page_size: int = 10
     max_page_size: int = 100
 
-    @field_validator("allowed_origins", mode="before")
-    @classmethod
-    def parse_origins(cls, v: str | list) -> list[str]:
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        """将逗号分隔的 CORS 字符串转换为列表"""
+        return [origin.strip() for origin in self.allowed_origins.split(",")]
 
 
 @lru_cache

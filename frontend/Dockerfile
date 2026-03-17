@@ -3,7 +3,7 @@ FROM node:22-alpine AS base
 
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --prefer-offline
+RUN npm install --prefer-offline
 
 # ---- 开发环境 ----
 FROM base AS development

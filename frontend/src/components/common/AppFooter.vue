@@ -1,6 +1,6 @@
 <template>
   <footer class="app-footer">
-    <p>© {{ year }} 小唐博客 · Powered by FastAPI + Vue 3</p>
+    <p>© {{ year }} 小汤博客 · Powered by FastAPI + Vue 3</p>
   </footer>
 </template>
 

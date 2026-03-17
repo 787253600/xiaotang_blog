@@ -1,7 +1,7 @@
 <template>
   <header class="app-header">
     <div class="header-inner">
-      <RouterLink to="/" class="logo">小唐博客</RouterLink>
+      <RouterLink to="/" class="logo">小汤博客</RouterLink>
 
       <nav class="nav">
         <RouterLink to="/">首页</RouterLink>

@@ -80,7 +80,7 @@ router.beforeEach(async (to) => {
 // 更新页面标题
 router.afterEach((to) => {
   const title = to.meta.title as string | undefined
-  document.title = title ? `${title} - 小唐博客` : '小唐博客'
+  document.title = title ? `${title} - 小汤博客` : '小汤博客'
 })
 
 export default router
