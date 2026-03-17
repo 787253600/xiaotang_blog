@@ -38,10 +38,10 @@
 
       <p v-if="error" class="error">{{ error }}</p>
       <div class="form-actions">
-        <button type="submit" :disabled="saving">
+        <button type="button" class="btn" @click="router.back()">取消</button>
+        <button type="submit" class="btn btn-primary" :disabled="saving">
           {{ saving ? '保存中...' : '保存' }}
         </button>
-        <RouterLink to="/admin/articles" class="btn-cancel">取消</RouterLink>
       </div>
     </form>
   </div>
@@ -49,12 +49,14 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
 import { articlesApi } from '@/api/articles'
 import { categoriesApi } from '@/api/categories'
 import type { Category } from '@/types/category'
+import { useToastStore } from '@/stores/toast'
+const toastStore = useToastStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -117,6 +119,7 @@ async function handleSubmit(): Promise<void> {
     } else {
       await articlesApi.create(form)
     }
+    toastStore.add(isEdit ? '文章已更新' : '文章已发布', 'success')
     router.push('/admin/articles')
   } catch (e: unknown) {
     error.value = '保存失败，请检查输入'
@@ -125,3 +128,17 @@ async function handleSubmit(): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+.form-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0 -1rem -1rem;
+}
+</style>

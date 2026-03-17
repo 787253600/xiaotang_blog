@@ -1,7 +1,9 @@
 <template>
   <div class="login-view">
     <div class="login-card">
-      <h1>小汤博客</h1>
+      <div class="login-logo">
+        <span class="logo-bracket">&lt;/&gt;</span> 小汤博客
+      </div>
       <h2>管理员登录</h2>
 
       <form @submit.prevent="handleLogin">
@@ -38,6 +40,8 @@
 import { reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
+const toastStore = useToastStore()
 
 const router = useRouter()
 const route = useRoute()
@@ -56,8 +60,20 @@ async function handleLogin(): Promise<void> {
     router.push(redirect)
   } catch {
     error.value = '用户名或密码错误'
+    toastStore.add('登录失败，请检查用户名和密码', 'error')
   } finally {
     loading.value = false
   }
 }
 </script>
+
+<style scoped>
+.login-logo {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.logo-bracket { color: var(--color-primary); }
+</style>
