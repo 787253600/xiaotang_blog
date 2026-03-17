@@ -14,19 +14,24 @@ const state = reactive({
 
 export function useConfirm() {
   function confirm(options: ConfirmOptions): Promise<boolean> {
+    if (state.visible) return Promise.resolve(false)
     state.options = options
     state.visible = true
     return new Promise(r => { state.resolve = r })
   }
 
   function accept(): void {
-    state.resolve?.(true)
+    const resolve = state.resolve
+    state.resolve = null
     state.visible = false
+    resolve?.(true)
   }
 
   function cancel(): void {
-    state.resolve?.(false)
+    const resolve = state.resolve
+    state.resolve = null
     state.visible = false
+    resolve?.(false)
   }
 
   return { confirm, accept, cancel, state }
