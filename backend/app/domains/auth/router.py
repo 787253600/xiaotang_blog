@@ -4,7 +4,7 @@ from fastapi import APIRouter, Cookie, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.dependencies import CurrentUserID, DBSession
-from app.domains.auth.schemas import LoginRequest, TokenResponse, UserInfo
+from app.domains.auth.schemas import ChangePasswordRequest, LoginRequest, TokenResponse, UserInfo
 from app.domains.auth.service import AuthService
 from app.schemas.response import Response as AppResponse
 
@@ -65,3 +65,14 @@ async def get_me(session: DBSession, user_id: CurrentUserID):
     service = AuthService(session)
     data = await service.get_current_user(user_id)
     return AppResponse(data=data)
+
+
+@router.patch("/password", response_model=AppResponse[None])
+async def change_password(
+    body: ChangePasswordRequest,
+    session: DBSession,
+    user_id: CurrentUserID,
+):
+    service = AuthService(session)
+    await service.change_password(user_id, body.current_password, body.new_password)
+    return AppResponse(message="密码已修改")

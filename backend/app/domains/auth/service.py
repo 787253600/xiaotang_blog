@@ -11,6 +11,7 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
     revoke_token,
     verify_password,
 )
@@ -72,6 +73,19 @@ class AuthService:
         if not user:
             raise UnauthorizedError("用户不存在")
         return UserInfo.model_validate(user)
+
+    async def change_password(
+        self, user_id: int, current_password: str, new_password: str
+    ) -> None:
+        """修改当前用户密码"""
+        from app.core.exceptions import BadRequestError
+        user = await self._session.get(User, user_id)
+        if not user:
+            raise UnauthorizedError("用户不存在")
+        if not verify_password(current_password, user.hashed_password):
+            raise BadRequestError("当前密码错误")
+        user.hashed_password = hash_password(new_password)
+        await self._session.commit()
 
     async def _get_user_by_username(self, username: str) -> User | None:
         result = await self._session.execute(

@@ -1,7 +1,9 @@
 """全局配置管理 - 基于 Pydantic Settings，支持 .env 文件与环境变量"""
 
+import warnings
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +47,17 @@ class Settings(BaseSettings):
     def allowed_origins_list(self) -> list[str]:
         """将逗号分隔的 CORS 字符串转换为列表"""
         return [origin.strip() for origin in self.allowed_origins.split(",")]
+
+    @model_validator(mode="after")
+    def check_secret_key(self) -> "Settings":
+        """生产环境下，若使用默认 SECRET_KEY 则发出警告"""
+        default_keys = {"your-secret-key-change-in-production", "changeme", "secret"}
+        if not self.debug and self.secret_key in default_keys:
+            warnings.warn(
+                "SECRET_KEY 使用了不安全的默认值，生产环境请在 .env 中设置强随机密钥！",
+                stacklevel=2,
+            )
+        return self
 
 
 @lru_cache

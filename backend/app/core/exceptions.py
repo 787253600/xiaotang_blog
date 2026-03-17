@@ -53,6 +53,15 @@ class ConflictError(AppException):
         )
 
 
+class BadRequestError(AppException):
+    def __init__(self, message: str = "请求参数错误"):
+        super().__init__(
+            code=4000,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 class ValidationError(AppException):
     def __init__(self, message: str):
         super().__init__(
