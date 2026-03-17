@@ -42,6 +42,21 @@
       </tbody>
     </table>
 
+    <!-- 移动端：卡片列表 -->
+    <div v-if="result" class="article-cards-mobile">
+      <div v-for="article in result.items" :key="article.id" class="admin-article-card">
+        <div class="admin-card-main">
+          <span class="admin-card-title">{{ article.title }}</span>
+          <span class="admin-card-category">{{ article.category?.name ?? '未分类' }}</span>
+        </div>
+        <div class="admin-card-right">
+          <span :class="article.is_published ? 'badge-published' : 'badge-draft'">
+            {{ article.is_published ? '已发布' : '草稿' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <AppPagination
       v-if="result && result.total_pages > 1"
       :current-page="page"
@@ -116,4 +131,51 @@ function formatDate(iso: string): string {
 }
 .icon-action-btn:hover { background: var(--color-bg-hover); color: var(--color-text); }
 .icon-action-btn.delete:hover { color: var(--color-danger); }
+
+.article-cards-mobile { display: none; }
+
+@media (max-width: 639px) {
+  .article-table { display: none; }
+  .article-cards-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .admin-article-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  .admin-card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .admin-card-title {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .admin-card-category {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .badge-published {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(63,185,80,0.15);
+    color: var(--color-success);
+  }
+  .badge-draft {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: var(--color-bg-hover);
+    color: var(--color-text-muted);
+  }
+}
 </style>

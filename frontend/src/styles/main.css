@@ -306,3 +306,9 @@ button,
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+/* 移动端通用触摸区域 */
+@media (max-width: 639px) {
+  button, .btn, a.btn { min-height: 44px; }
+  .main-content { padding: var(--spacing-md) var(--spacing-sm); }
+}
