@@ -72,3 +72,6 @@ backend/migrations/versions/__pycache__/
 # ==========================================
 media/
 uploads/
+
+# Git Worktrees
+.worktrees/
