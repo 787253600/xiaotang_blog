@@ -2,10 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
+from datetime import date
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from app.cache.client import close_redis_client, get_redis_client
@@ -18,7 +20,10 @@ from app.domains.auth.models import User
 from app.domains.auth.router import router as auth_router
 from app.domains.categories.router import router as categories_router
 from app.domains.comments.router import router as comments_router
+from app.domains.links.router import router as links_router
+from app.domains.stats.router import router as stats_router
 from app.domains.tags.router import router as tags_router
+from app.domains.upload.router import router as upload_router
 from app.search.postgres_search import detect_ts_config
 
 logging.basicConfig(level=logging.INFO)
@@ -95,6 +100,28 @@ def create_app() -> FastAPI:
     app.include_router(categories_router, prefix=api_prefix)
     app.include_router(tags_router, prefix=api_prefix)
     app.include_router(comments_router, prefix=api_prefix)
+    app.include_router(links_router, prefix=api_prefix)
+    app.include_router(stats_router, prefix=api_prefix)
+    app.include_router(upload_router, prefix=api_prefix)
+
+    # 静态文件（上传图片等）
+    import os
+    os.makedirs("static/uploads", exist_ok=True)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
+    # 访问计数中间件
+    @app.middleware("http")
+    async def visit_counter(request: Request, call_next):
+        response = await call_next(request)
+        if request.method == "GET":
+            try:
+                redis = await get_redis_client()
+                if redis:
+                    key = f"stats:visits:{date.today().isoformat()}"
+                    await redis.incr(key)
+            except Exception:
+                pass
+        return response
 
     @app.get("/health", tags=["系统"])
     async def health_check() -> dict:

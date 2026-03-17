@@ -15,6 +15,9 @@ from app.domains.auth.models import User  # noqa: F401
 from app.domains.categories.models import Category  # noqa: F401
 from app.domains.comments.models import Comment  # noqa: F401
 from app.domains.tags.models import Tag, article_tags  # noqa: F401
+from app.domains.links.models import Link  # noqa: F401
+from app.domains.stats.models import DailyVisit  # noqa: F401
+
 
 config = context.config
 if config.config_file_name is not None:

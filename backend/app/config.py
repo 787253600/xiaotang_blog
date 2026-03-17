@@ -43,6 +43,14 @@ class Settings(BaseSettings):
     default_page_size: int = 10
     max_page_size: int = 100
 
+    # 存储后端（local / oss / s3）
+    storage_backend: str = "local"
+    oss_bucket: str = ""
+    oss_region: str = ""
+    oss_cdn_url: str = ""
+    oss_access_key: str = ""
+    oss_secret_key: str = ""
+
     @property
     def allowed_origins_list(self) -> list[str]:
         """将逗号分隔的 CORS 字符串转换为列表"""

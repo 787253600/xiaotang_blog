@@ -14,6 +14,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import Text, TypeDecorator
+
+
+class TSVector(TypeDecorator):
+    """PostgreSQL TSVECTOR，测试环境（SQLite）自动降级为 Text。"""
+
+    impl = Text
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(TSVECTOR())
+        return dialect.type_descriptor(Text())
 
 from app.db.base import Base
 from app.domains.tags.models import article_tags
@@ -48,7 +61,7 @@ class Article(Base):
 
     # 全文搜索向量（PostgreSQL 触发器自动维护）
     search_vector: Mapped[str | None] = mapped_column(
-        TSVECTOR, nullable=True, comment="全文搜索向量"
+        TSVector, nullable=True, comment="全文搜索向量"
     )
 
     # 时间戳

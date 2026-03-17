@@ -26,6 +26,11 @@ const router = createRouter({
       component: () => import('@/views/public/TagView.vue'),
       meta: { title: '标签' },
     },
+    {
+      path: '/links',
+      component: () => import('@/views/public/LinksView.vue'),
+      meta: { title: '友情链接' },
+    },
 
     // 后台管理（需认证）
     {

@@ -9,6 +9,7 @@
       <nav class="nav desktop-nav">
         <RouterLink to="/">首页</RouterLink>
         <RouterLink to="/search">搜索</RouterLink>
+        <RouterLink to="/links">友情链接</RouterLink>
         <RouterLink v-if="authStore.isLoggedIn" to="/admin">后台</RouterLink>
       </nav>
 
@@ -60,6 +61,7 @@
       <nav v-if="mobileMenuOpen" class="mobile-nav" @click="mobileMenuOpen = false">
         <RouterLink to="/">首页</RouterLink>
         <RouterLink to="/search">搜索</RouterLink>
+        <RouterLink to="/links">友情链接</RouterLink>
         <RouterLink v-if="authStore.isLoggedIn" to="/admin">后台</RouterLink>
       </nav>
     </Transition>

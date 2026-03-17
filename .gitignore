@@ -75,3 +75,6 @@ uploads/
 
 # Git Worktrees
 .worktrees/
+
+# 个人学习笔记
+notes/

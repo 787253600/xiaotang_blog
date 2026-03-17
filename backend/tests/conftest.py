@@ -6,6 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.db.base import Base
+from app.dependencies import get_db
 from app.main import app
 
 # 使用 SQLite 内存数据库进行测试（aiosqlite）
@@ -30,9 +31,19 @@ async def session(engine):
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(engine):
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def override_get_db():
+        async with async_session() as s:
+            yield s
+
+    app.dependency_overrides[get_db] = override_get_db
+
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://testserver",
     ) as c:
         yield c
+
+    app.dependency_overrides.clear()
