@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 
-from sqlalchemy import Select, func, text
+from sqlalchemy import Select, func, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cache.client import get_redis_client
@@ -56,11 +56,11 @@ async def full_text_search(
     page_size: int = 10,
 ) -> dict:
     """
-    执行全文搜索。
+    执行文章搜索（ILIKE 模糊匹配，支持中文）。
 
     Args:
         session: 数据库会话
-        model: 含 search_vector 列的 SQLAlchemy 模型
+        model: SQLAlchemy 模型（Article）
         query_str: 用户搜索词
         page: 页码
         page_size: 每页数量
@@ -68,35 +68,29 @@ async def full_text_search(
     Returns:
         {"items": [...], "total": int}
     """
-    # 检查 Redis 缓存
-    redis = await get_redis_client()
-    query_hash = hashlib.md5(
-        f"{query_str}:{page}:{page_size}".encode()
-    ).hexdigest()[:12]
-    cache_key = CacheKeys.search_result(query_hash)
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
 
-    try:
-        cached = await redis.get(cache_key)
-        if cached:
-            return json.loads(cached)
-    except Exception:
-        pass
-
-    ts_query_str = build_search_query(query_str)
-    if not ts_query_str:
+    if not query_str.strip():
         return {"items": [], "total": 0}
 
-    ts_query = func.to_tsquery(_TS_CONFIG, ts_query_str)
+    pattern = f"%{query_str.strip()}%"
 
-    # 按相关度排序
-    rank = func.ts_rank(model.search_vector, ts_query).label("rank")
-
-    from sqlalchemy import select
     stmt = (
-        select(model, rank)
-        .where(model.search_vector.op("@@")(ts_query))
-        .where(model.is_published.is_(True))
-        .order_by(rank.desc())
+        select(model)
+        .options(
+            selectinload(model.category),
+            selectinload(model.tags),
+        )
+        .where(
+            model.is_published.is_(True),
+            or_(
+                model.title.ilike(pattern),
+                model.excerpt.ilike(pattern),
+                model.content.ilike(pattern),
+            ),
+        )
+        .order_by(model.created_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
@@ -104,23 +98,20 @@ async def full_text_search(
     count_stmt = (
         select(func.count())
         .select_from(model)
-        .where(model.search_vector.op("@@")(ts_query))
-        .where(model.is_published.is_(True))
+        .where(
+            model.is_published.is_(True),
+            or_(
+                model.title.ilike(pattern),
+                model.excerpt.ilike(pattern),
+                model.content.ilike(pattern),
+            ),
+        )
     )
 
     result = await session.execute(stmt)
     count_result = await session.execute(count_stmt)
 
-    items = [row[0] for row in result.all()]
+    items = list(result.scalars().all())
     total = count_result.scalar() or 0
 
-    data = {"items": items, "total": total}
-
-    # 写入缓存
-    try:
-        serializable = {"items": [str(i.id) for i in items], "total": total}
-        await redis.setex(cache_key, CacheTTL.SEARCH_RESULT, json.dumps(serializable))
-    except Exception:
-        pass
-
-    return data
+    return {"items": items, "total": total}

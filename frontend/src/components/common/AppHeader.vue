@@ -12,6 +12,21 @@
         <RouterLink v-if="authStore.isLoggedIn" to="/admin">后台</RouterLink>
       </nav>
 
+      <!-- 顶部搜索框（桌面端常驻） -->
+      <form class="header-search" @submit.prevent="handleHeaderSearch">
+        <input
+          v-model="headerQuery"
+          type="search"
+          placeholder="搜索文章..."
+          class="header-search-input"
+        />
+        <button type="submit" class="header-search-btn" aria-label="搜索">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </form>
+
       <div class="header-actions">
         <button class="icon-btn" @click="uiStore.toggleTheme" :title="uiStore.isDark ? '切换浅色' : '切换深色'">
           <!-- 太阳图标（深色模式时显示，点击切换到浅色） -->
@@ -61,6 +76,13 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
+const headerQuery = ref('')
+
+function handleHeaderSearch(): void {
+  if (!headerQuery.value.trim()) return
+  router.push({ path: '/search', query: { q: headerQuery.value.trim() } })
+  headerQuery.value = ''
+}
 
 async function handleLogout(): Promise<void> {
   await authStore.logout()
@@ -174,5 +196,56 @@ async function handleLogout(): Promise<void> {
 @media (max-width: 639px) {
   .desktop-nav { display: none; }
   .hamburger { display: flex; }
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  max-width: 280px;
+}
+
+.header-search-input {
+  flex: 1;
+  padding: 0.35rem 0.65rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: unset;
+}
+
+.header-search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.header-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  min-height: unset;
+  padding: 0;
+}
+
+.header-search-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+@media (max-width: 639px) {
+  .header-search { display: none; }
 }
 </style>
