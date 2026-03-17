@@ -5,10 +5,8 @@
       <RouterView />
     </main>
     <AppFooter />
-    <!-- 全局单例组件（Task 2 新建后取消注释）
     <AppToast />
     <ConfirmModal />
-    -->
   </div>
 </template>
 
@@ -16,9 +14,9 @@
 import { RouterView } from 'vue-router'
 import AppHeader from '@/components/common/AppHeader.vue'
 import AppFooter from '@/components/common/AppFooter.vue'
+import AppToast from '@/components/common/AppToast.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useUiStore } from '@/stores/ui'
-// import AppToast from '@/components/common/AppToast.vue'
-// import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const uiStore = useUiStore()
 </script>
