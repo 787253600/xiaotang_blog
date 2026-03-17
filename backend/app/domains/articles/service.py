@@ -80,15 +80,18 @@ class ArticleService:
         if not article:
             raise NotFoundError("文章")
 
-        if increment_view:
-            await self._repo.increment_view_count(article_id)
-
+        # 先序列化（model_validate 在 increment 之前，避免 updated_at 被标记过期
+        # 后 Pydantic 同步读取触发 MissingGreenlet）
         result = ArticleResponse.model_validate(article)
         await redis_setex(
             cache_key,
             CacheTTL.ARTICLE_DETAIL,
             json.dumps(result.model_dump(mode="json")),
         )
+
+        if increment_view:
+            await self._repo.increment_view_count(article_id)
+
         return result
 
     async def create(self, data: ArticleCreate) -> ArticleResponse:
