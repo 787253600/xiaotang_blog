@@ -54,12 +54,34 @@ def create_app() -> FastAPI:
         logger.info("应用启动中...")
         # 预热 Redis 连接
         await get_redis_client()
-        # 检测全文搜索配置
-        from app.db.session import get_db
+
+        from sqlalchemy import select
+        from app.db.base import AsyncSessionLocal
+        from app.domains.auth.models import User
+        from app.core.security import hash_password
         from app.search.postgres_search import detect_ts_config
-        async for session in get_db():
+
+        async with AsyncSessionLocal() as session:
+            # 检测全文搜索配置
             await detect_ts_config(session)
-            break
+
+            # 自动创建管理员账号（若不存在）
+            result = await session.execute(
+                select(User).where(User.username == settings.admin_username)
+            )
+            if result.scalar_one_or_none() is None:
+                admin = User(
+                    username=settings.admin_username,
+                    email=settings.admin_email,
+                    hashed_password=hash_password(settings.admin_password),
+                    is_active=True,
+                )
+                session.add(admin)
+                await session.commit()
+                logger.info("管理员账号已初始化: %s", settings.admin_username)
+            else:
+                logger.info("管理员账号已存在，跳过初始化")
+
         logger.info("应用启动完成")
 
     @app.on_event("shutdown")
