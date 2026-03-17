@@ -11,6 +11,7 @@ html {
   scroll-behavior: smooth;
 }
 
+/* body 继承 :root token，无需修改 */
 body {
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
