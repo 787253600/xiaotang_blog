@@ -2,13 +2,17 @@ import { ref, onUnmounted } from 'vue'
 
 export function useDraftSave(key: string) {
   const lastSavedText = ref<string>('')
-  let intervalId: ReturnType<typeof setInterval> | null = null
+  const intervalIds: ReturnType<typeof setInterval>[] = []
   let lastSavedAt: Date | null = null
 
   function save(data: unknown): void {
-    localStorage.setItem(key, JSON.stringify(data))
-    lastSavedAt = new Date()
-    lastSavedText.value = '刚刚暂存'
+    try {
+      localStorage.setItem(key, JSON.stringify(data))
+      lastSavedAt = new Date()
+      lastSavedText.value = '刚刚暂存'
+    } catch {
+      // localStorage 容量不足时静默忽略，不丢失编辑状态
+    }
   }
 
   function load<T>(): T | null {
@@ -28,13 +32,14 @@ export function useDraftSave(key: string) {
   }
 
   function startAutoSave(getter: () => unknown, intervalMs = 30_000): void {
-    intervalId = setInterval(() => {
-      save(getter())
-      updateSavedText()
-    }, intervalMs)
-
+    intervalIds.push(
+      setInterval(() => {
+        save(getter())
+        updateSavedText()
+      }, intervalMs),
+    )
     // 每分钟更新「上次暂存于 X 分钟前」文字
-    setInterval(updateSavedText, 60_000)
+    intervalIds.push(setInterval(updateSavedText, 60_000))
   }
 
   function updateSavedText(): void {
@@ -44,7 +49,7 @@ export function useDraftSave(key: string) {
   }
 
   onUnmounted(() => {
-    if (intervalId !== null) clearInterval(intervalId)
+    intervalIds.forEach(clearInterval)
   })
 
   return { save, load, clear, startAutoSave, lastSavedText }

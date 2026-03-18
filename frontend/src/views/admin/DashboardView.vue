@@ -126,16 +126,25 @@ const statCards = computed(() => [
     label: 'TOTAL ARTICLES',
     value: overview.value?.total_articles.toLocaleString() ?? '—',
     sub: '篇文章',
+    link: null,
   },
   {
     label: 'DRAFTS',
     value: overview.value?.draft_articles.toLocaleString() ?? '—',
     sub: '待发布',
+    link: null,
   },
   {
     label: 'TOTAL VIEWS',
     value: overview.value?.total_views.toLocaleString() ?? '—',
-    sub: '总浏览量',
+    sub: '真实文章阅读量',
+    link: null,
+  },
+  {
+    label: 'COMMENTS',
+    value: overview.value?.pending_comments.toLocaleString() ?? '—',
+    sub: '条评论',
+    link: null,
   },
 ])
 
@@ -245,7 +254,7 @@ const todayRest = now.toLocaleDateString('en-US', { month: 'short', day: 'numeri
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 1px;
   background: var(--line);
   margin-bottom: 3rem;
@@ -494,7 +503,8 @@ const todayRest = now.toLocaleDateString('en-US', { month: 'short', day: 'numeri
     grid-template-columns: 1fr 1fr;
   }
 
-  .stat-card:first-child {
+  .stat-card:first-child,
+  .stat-card:nth-child(3) {
     grid-column: 1 / -1;
   }
 

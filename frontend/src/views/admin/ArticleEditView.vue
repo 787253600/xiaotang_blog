@@ -42,10 +42,11 @@
             type="text"
             required
             pattern="[a-z0-9-]+"
-            placeholder="url-slug"
+            placeholder="url-slug（将根据标题自动生成）"
             class="meta-input"
             autocomplete="off"
             spellcheck="false"
+            @input="slugManuallyEdited = true"
           />
         </div>
         <div class="meta-field">
@@ -106,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Vditor from 'vditor'
 import 'vditor/dist/index.css'
@@ -139,6 +140,34 @@ const form = reactive({
   category_id: null as number | null,
   is_published: false,
 })
+
+// 自动生成 slug：将标题转换为 URL 友好格式
+// 新建模式下，若 slug 未被手动编辑则跟随标题自动变化
+let slugManuallyEdited = false
+
+function generateSlug(title: string): string {
+  const latin = title
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')          // 空格/下划线 → 连字符
+    .replace(/[^a-z0-9-]/g, '')       // 去掉非 ASCII 字符
+    .replace(/-{2,}/g, '-')           // 合并多个连字符
+    .replace(/^-|-$/g, '')            // 去掉首尾连字符
+  if (latin.length >= 3) return latin
+  // 标题全是中文时用日期时间戳生成唯一 slug
+  const now = new Date()
+  return `article-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+}
+
+if (!isEdit) {
+  watch(
+    () => form.title,
+    (newTitle) => {
+      if (!slugManuallyEdited) {
+        form.slug = generateSlug(newTitle)
+      }
+    },
+  )
+}
 
 onMounted(async () => {
   const catRes = await categoriesApi.list()

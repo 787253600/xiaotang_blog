@@ -14,6 +14,7 @@ class OverviewData(BaseModel):
     total_articles: int
     draft_articles: int
     total_views: int
+    pending_comments: int
     daily_visits: list[DailyVisitItem]
 
 

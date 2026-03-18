@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.articles.models import Article
+from app.domains.comments.models import Comment
 from app.domains.stats.models import DailyVisit
 from app.domains.stats.schemas import DailyVisitItem, OverviewData
 
@@ -48,18 +49,26 @@ async def flush_redis_visits(session: AsyncSession) -> None:
 
 async def get_overview(session: AsyncSession) -> OverviewData:
     """获取仪表盘概览数据。"""
-    # 文章统计
-    total_articles_result = await session.execute(select(func.count()).select_from(Article))
-    total_articles = total_articles_result.scalar_one()
+    try:
+        # 文章统计
+        total_articles_result = await session.execute(select(func.count()).select_from(Article))
+        total_articles = total_articles_result.scalar_one()
 
-    draft_result = await session.execute(
-        select(func.count()).select_from(Article).where(Article.is_published == False)  # noqa: E712
-    )
-    draft_articles = draft_result.scalar_one()
+        draft_result = await session.execute(
+            select(func.count()).select_from(Article).where(Article.is_published == False)  # noqa: E712
+        )
+        draft_articles = draft_result.scalar_one()
 
-    # 总浏览量（先取 DB 存量）
-    total_views_result = await session.execute(select(func.sum(Article.view_count)))
-    total_views_db = total_views_result.scalar_one() or 0
+        # 待处理评论数（所有评论，可按需扩展审核状态字段后过滤）
+        comments_result = await session.execute(select(func.count()).select_from(Comment))
+        pending_comments = comments_result.scalar_one()
+
+        # 总浏览量（先取 DB 存量）
+        total_views_result = await session.execute(select(func.sum(Article.view_count)))
+        total_views_db = total_views_result.scalar_one() or 0
+    except Exception as e:
+        logger.error("stats overview DB 查询失败: %s", e)
+        raise
 
     # Redis 当日实时浏览计数（累加到总量）
     try:
@@ -76,10 +85,14 @@ async def get_overview(session: AsyncSession) -> OverviewData:
     today = date.today()
     start = today - timedelta(days=13)
 
-    db_result = await session.execute(
-        select(DailyVisit).where(DailyVisit.date >= start).order_by(DailyVisit.date)
-    )
-    db_rows = {row.date: row.count for row in db_result.scalars().all()}
+    try:
+        db_result = await session.execute(
+            select(DailyVisit).where(DailyVisit.date >= start).order_by(DailyVisit.date)
+        )
+        db_rows = {row.date: row.count for row in db_result.scalars().all()}
+    except Exception as e:
+        logger.warning("daily_visits 查询失败，使用空数据: %s", e)
+        db_rows = {}
 
     # 补全缺失日期 + 当天 Redis 计数
     daily_visits: list[DailyVisitItem] = []
@@ -102,5 +115,6 @@ async def get_overview(session: AsyncSession) -> OverviewData:
         total_articles=total_articles,
         draft_articles=draft_articles,
         total_views=total_views_db,
+        pending_comments=pending_comments,
         daily_visits=daily_visits,
     )

@@ -109,11 +109,14 @@ def create_app() -> FastAPI:
     os.makedirs("static/uploads", exist_ok=True)
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-    # 访问计数中间件
+    # 访问计数中间件：仅统计文章详情页的真实读取（GET /api/v1/articles/{id}）
+    import re as _re
+    _article_path_re = _re.compile(r"^/api/v1/articles/\d+$")
+
     @app.middleware("http")
     async def visit_counter(request: Request, call_next):
         response = await call_next(request)
-        if request.method == "GET":
+        if request.method == "GET" and _article_path_re.match(request.url.path):
             try:
                 redis = await get_redis_client()
                 if redis:

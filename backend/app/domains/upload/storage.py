@@ -8,6 +8,26 @@ ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 UPLOAD_DIR = Path("static/uploads")
 
+# 各图片格式的 magic bytes（文件头签名）
+_MAGIC: dict[bytes, str] = {
+    b"\xff\xd8\xff": "image/jpeg",
+    b"\x89PNG\r\n\x1a\n": "image/png",
+    b"GIF87a": "image/gif",
+    b"GIF89a": "image/gif",
+    b"RIFF": "image/webp",  # RIFF????WEBP，前4字节即可区分
+}
+
+
+def validate_magic_bytes(content: bytes, declared_content_type: str) -> bool:
+    """验证文件内容的 magic bytes 与声明的 Content-Type 一致。"""
+    for magic, mime in _MAGIC.items():
+        if content.startswith(magic):
+            # WebP 需额外验证第 8-12 字节为 "WEBP"
+            if magic == b"RIFF":
+                return len(content) >= 12 and content[8:12] == b"WEBP" and declared_content_type == "image/webp"
+            return mime == declared_content_type
+    return False
+
 
 class StorageBackend(abc.ABC):
     """存储后端抽象基类"""
